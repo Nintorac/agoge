@@ -2,9 +2,14 @@
 from setuptools import setup, find_packages
 from pathlib import Path
 
-readme = Path('README.md').read_text()
-requirements = Path('requirements.txt').read_text().split('\n')
-__version__ = Path('version').read_text().strip()
+root_path = Path(__file__).parent
+
+print(list(root_path.iterdir()))
+
+readme = root_path.joinpath('README.md').read_text()
+requirements = root_path.joinpath('requirements.txt').read_text().split('\n')
+__version__ = root_path.joinpath('version').read_text().strip()
+
 
 setup(
     name='agoge',
@@ -15,7 +20,6 @@ setup(
     author_email='agoge@nintorac.dev',
     url='https://github.com/nintorac/agoge',
     description='Machine Learning infra',
-    download_url = 'https://github.com/Nintorac/agoge/archive/0.0.1.tar.gz',
     long_description=readme,
     zip_safe=True,
       keywords = ['pytorch', 'machine learning'],
