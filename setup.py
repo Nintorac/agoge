@@ -8,12 +8,25 @@ __version__ = Path('version').read_text().strip()
 
 setup(
     name='agoge',
+    packages = ['agoge'],
+    license='MIT',
     version=__version__,
     author='Nintorac',
-    author_email='nintoracaudio@gmail.com',
+    author_email='agoge@nintorac.dev',
     url='https://github.com/nintorac/agoge',
-    description='Machine Learning model training centre',
+    description='Machine Learning infra',
     long_description=readme,
     zip_safe=True,
+      keywords = ['pytorch', 'machine learning'],
     install_requires=requirements,
+    classifiers=[
+    'Development Status :: 3 - Alpha',      # Chose either "3 - Alpha", "4 - Beta" or "5 - Production/Stable" as the current state of your package
+    'Intended Audience :: Developers',      # Define that your audience are developers
+    'Topic :: Software Development :: Build Tools',
+    'License :: OSI Approved :: MIT License',   # Again, pick a license
+    'Programming Language :: Python :: 3',      #Specify which pyhton versions that you want to support
+    'Programming Language :: Python :: 3.4',
+    'Programming Language :: Python :: 3.5',
+    'Programming Language :: Python :: 3.6',
+  ],
 )
