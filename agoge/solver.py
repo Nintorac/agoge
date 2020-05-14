@@ -4,7 +4,7 @@ from importlib import import_module
 class AbstractSolver(metaclass=ABCMeta):
 
     @abstractmethod
-    def solve(self, model, X):
+    def solve(self, X):
         return {}
 
     @abstractmethod
