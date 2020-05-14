@@ -15,6 +15,7 @@ setup(
     author_email='agoge@nintorac.dev',
     url='https://github.com/nintorac/agoge',
     description='Machine Learning infra',
+    download_url = 'https://github.com/Nintorac/agoge/archive/0.0.1.tar.gz',
     long_description=readme,
     zip_safe=True,
       keywords = ['pytorch', 'machine learning'],
