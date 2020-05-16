@@ -13,7 +13,7 @@ from agoge.utils import get_logger, download_blob
 logger = get_logger(__name__)
 
 ARTIFACTS_ROOT = DEFAULTS['ARTIFACTS_ROOT']
-BUCKET = DEFAULTS['BASE_URL']
+BASE_URL = DEFAULTS['BASE_URL']
 
 
 class InferenceWorker():
