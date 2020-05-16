@@ -3,7 +3,8 @@ DEFAULTS = defaults_f({
     'ARTIFACTS_ROOT': '~/agoge/artifacts',
     'TQDM_ENABLED': False,
     'TRIAL_ROOT': 'Worker',
-    'BUCKET': 'nintorac_model_serving'
+    'BUCKET': 'nintorac_model_serving',
+    'BASE_URL': 'https://github.com/Nintorac/NeuralDX7-weights/raw/master'
 })
 
 from .tracker import Tracker

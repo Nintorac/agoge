@@ -4,8 +4,6 @@ from pathlib import Path
 
 root_path = Path(__file__).parent
 
-print(list(root_path.iterdir()))
-
 readme = root_path.joinpath('README.md').read_text()
 requirements = root_path.joinpath('requirements.txt').read_text().split('\n')
 __version__ = root_path.joinpath('version').read_text().strip()
