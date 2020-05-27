@@ -44,7 +44,7 @@ class TrainWorker(Trainable):
 
         plotter = iter(self.tracker.metric_logger(phase, plot_freq))
         next(plotter)
-        for i, X in enumerate(tqdm(loader, disable=DEFAULTS['TQDM_ENABLED'])):
+        for i, X in enumerate(tqdm(loader, disable=bool(DEFAULTS['TQDM_ENABLED']))):
             
             X = to_device(X, self.model.device)
 

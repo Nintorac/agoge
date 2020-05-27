@@ -54,7 +54,6 @@ class Tracker():
         """
         Push the hyperparameters for the current run.. only does things on first  call
         """
-
         if self.params_submitted:
             # if params already submitted skip resubmission
             return
@@ -64,10 +63,14 @@ class Tracker():
             idxs = lambda x: x * chunk_size
             yield from (to_chunk[idxs(i):idxs(i + 1)] for i in range(n_chunks))
 
-        params = {key: value for key, value in params.items() if '..' in key}
+        params = {key: value for key, value in params.items() if 'param_' in key}
         with self.run_context():
             for keys in chunk(list(params.keys()), MAX_PARAMS_PER_LOG):
-                mlflow.log_params(dict(zip(keys, map(params.get, keys))))
+                
+                param_keys = map(lambda key: key.replace('param_', ''), keys)
+                param_values = map(params.get, keys)
+
+                mlflow.log_params(dict(zip(param_keys, param_values)))
 
         self.params_submitted = True
         
