@@ -20,7 +20,7 @@ class TrainWorker(Trainable):
         self.setup_worker(**config)
         self.setup_components(**config)
 
-    def setup_worker(self, points_per_epoch=100, **kwargs):
+    def setup_worker(self, points_per_epoch=10, **kwargs):
 
         self.points_per_epoch = points_per_epoch
 
