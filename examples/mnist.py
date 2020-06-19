@@ -13,7 +13,7 @@ from torch.nn import functional as F
 from torch import nn
 from torch.optim import Adadelta
 from torch.nn import Module
-from agoge import AbstractModel, AbstractSolver, Worker
+from agoge import AbstractModel, AbstractSolver, TrainWorker, DEFAULTS
 from agoge.utils import uuid, trial_name_creator, experiment_name_creator, get_logger
 
 import logging
@@ -26,6 +26,9 @@ logger = get_logger(__name__)
 class MNISTDataset():
 
     def __init__(self, data_path='~/datasets', transform=None):
+        """
+        Simple dataset that wraps torchvision mnist dataset
+        """
         
         transform = transforms.Compose([
                            transforms.ToTensor(),
@@ -41,7 +44,12 @@ class MNISTDataset():
         self.dataset = ConcatDataset((train_dataset, test_dataset))
 
     def __getitem__(self, i):
-        
+        """
+        returns a dictionary of {
+            'x': torch.FloatTensor(batch_size, 1, 28, 28),
+            'y': torch.LongTensor(batch_size)
+        }
+        """
         return dict(zip(['x', 'y'], self.dataset[i]))
 
     def __len__(self):
@@ -81,7 +89,10 @@ class MNISTModel(AbstractModel):
         x = self.dropout2(x)
         x = self.fc2(x)
         output = F.log_softmax(x, dim=1)
-        return output
+
+        return {
+            'y_hat': output
+        }
 
 
 class MNISTSolver(AbstractSolver):
@@ -100,14 +111,14 @@ class MNISTSolver(AbstractSolver):
 
         self.model = model
 
-    def loss(self, y, y_hat):
+    def loss(self, y, y_hat, **kwargs):
 
         return F.cross_entropy(y_hat, y)
 
-    def solve(self, x, y, **kwargs):
+    def solve(self, X, **kwargs):
         
-        y_hat = self.model(x)
-        loss = self.loss(y, y_hat)
+        Y = self.model(**X)
+        loss = self.loss(**X, **Y)
 
         if self.model.training:
 
@@ -138,55 +149,5 @@ class MNISTSolver(AbstractSolver):
         list(starmap(load_component, state_dict.items()))
 
 
-def config(Model, Solver, experiment_name, trial_name, batch_size=128, **kwargs):
-
-    data_handler = {
-        'Dataset': MNISTDataset,
-        'dataset_opts': {'data_path': '~/audio/artifacts/'},
-        'loader_opts': {
-            'batch_size': batch_size,
-            'shuffle': True
-        },
-    }
-
-    model = {
-        'Model': Model
-        # 'conv1': (1, 32, 3, 1)
-    }
-
-    solver = {
-        'Solver': Solver
-    }
-
-    tracker = {
-        'metrics': ['loss'],
-        'experiment_name': experiment_name,
-        'trial_name': trial_name
-    }
-
-    return {
-        'data_handler': data_handler,
-        'model': model,
-        'solver': solver,
-        'tracker': tracker,
-    }
-
-if __name__=='__main__':
-    from mlflow.tracking import MlflowClient
-    # client = MlflowClient(tracking_uri='localhost:5000')
-    experiment_name = 'mnist-'#+experiment_name_creator()
-    # experiment_id = client.create_experiment(experiment_name)
-
-    stopping_criterion = lambda trial_id, results: results['loss']['loss']<1.0
-    
-    tune.run(Worker, config={
-        'config_generator': config,
-        'experiment_name': experiment_name,
-        'Model': MNISTModel,
-        'Solver': MNISTSolver
-    },
-        trial_name_creator=trial_name_creator,
-        stop=stopping_criterion
-    )
 # points_per_epoch
 # %%

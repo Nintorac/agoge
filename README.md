@@ -5,7 +5,6 @@ An opinionated ML development environment
 Train pytorch models, hyperparameter tune them with single loc change.
 
 
-
 ## Libraries
 
 ### Pytorch
@@ -16,9 +15,9 @@ Train pytorch models, hyperparameter tune them with single loc change.
 
 [Ray](https://ray-project.github.io/) Provides easy experiment scaling + hyper parameter optimisation
 
-### MLFlow
+### Weights and Biases
 
-Provides tracking of model metrics and hyperparameters. Also allows for intelligent storing of training artifacts
+Agoge uses WandB to monitor model training. It's super easy to setup, just go to the [wandb website](https://www.wandb.com/) and sign up for an account. Then follow the instructions to set up
 
 ## Static Components
 
@@ -31,24 +30,6 @@ Setups all the required components to train a model
 ### Inference Worker
 
 Setups all the required components for inference. Also attempts to download model weights if they are not found locally.
-
-### Tracker
-
-Slim interface into MLFlow, to set the MLFlow server address set the `MLFLOW_TRACKING_URI` environment variable either from the CLI or before importing `agoge`.
-
-Examples
-
-CLI
-```
-MLFLOW_TRACKING_URI="http://localhost:5001"
-```
-
-Python
-```
-from os import environ
-environ['MLFLOW_TRACKING_URI'] = 'http://localhost:5001'
-import agoge
-```
 
 ### Data Handler
 

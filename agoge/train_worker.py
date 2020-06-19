@@ -1,9 +1,10 @@
+import wandb
+import torch
+from tempfile import TemporaryDirectory
 from pathlib import Path
 from tqdm import tqdm
-import mlflow
-import torch
 from ray.tune import Trainable
-from agoge import AbstractModel as Model, Tracker, AbstractSolver as Solver, DataHandler
+from agoge import AbstractModel as Model, AbstractSolver as Solver, DataHandler
 from agoge.utils import to_device
 from agoge import DEFAULTS
 from agoge.utils import get_logger
@@ -15,20 +16,37 @@ class TrainWorker(Trainable):
 
     def _setup(self, config):
 
-        config['trial_name'] = getattr(self, 'trial_name', '')
+        self.setup_worker(config)
+        self.setup_components(config)
+        self.setup_tracking(config)
 
-        self.setup_worker(**config)
-        self.setup_components(**config)
+    @property
+    def trial_name(self):
+        return self._trial_info._trial_name
 
     def setup_worker(self, points_per_epoch=10, **kwargs):
 
         self.points_per_epoch = points_per_epoch
 
-    def setup_components(self, **config):
+    def setup_tracking(self, config):
+
+        wandb.init(
+            project=config['experiment_name'],
+            name=self.trial_name,
+            resume=True
+            )
+        
+        wandb.config.update({
+            key.replace('param_', ''): value
+                 for key, value in self.config.items() if 'param_' in key
+        })
+
+        wandb.watch(self.model)
+
+    def setup_components(self, config):
         
         worker_config = config['config_generator'](**config)
         self.worker_config = worker_config
-        self.tracker = Tracker(**worker_config['tracker'])
 
         self.model = Model.from_config(**worker_config['model'])
         self.solver = Solver.from_config(model=self.model, **worker_config['solver'])
@@ -40,26 +58,19 @@ class TrainWorker(Trainable):
 
     def epoch(self, loader, phase):
         
-        plot_freq = len(loader)//self.points_per_epoch
-
-        plotter = iter(self.tracker.metric_logger(phase, plot_freq))
-        next(plotter)
-        for i, X in enumerate(tqdm(loader, disable=bool(DEFAULTS['TQDM_ENABLED']))):
+        for i, X in enumerate(tqdm(loader, disable=bool(DEFAULTS['TQDM_DISABLED']))):
             
             X = to_device(X, self.model.device)
 
             loss = self.solver.solve(X)
-            plotter.send(loss)
-
-        loss = plotter.send(None)
+            wandb.log(loss)
+            break
         
         return loss
 
 
     def _train(self):
         
-        self.tracker.log_params(self.config)
-
         with self.model.train_model():
             self.epoch(self.dataset.loaders.train, 'train')
         with torch.no_grad():
@@ -73,11 +84,10 @@ class TrainWorker(Trainable):
         state_dict = {
             'model': self.model.state_dict(),
             'solver': self.solver.state_dict(),
-            'tracker': self.tracker.state_dict(),
             'worker': self.worker_config
         }
 
-        path = Path(path).joinpath('model.box').as_posix()
+        path = Path(path).joinpath(f'{self.trial_name}.pt').as_posix()
         torch.save(state_dict, path)
 
         return path
@@ -89,8 +99,10 @@ class TrainWorker(Trainable):
 
         self.model.load_state_dict(state_dict['model'])
         self.solver.load_state_dict(state_dict['solver'])
-        self.tracker.load_state_dict(state_dict['tracker'])
 
     def _stop(self):
 
-        self.tracker.set_status('FINISHED')
+        with TemporaryDirectory() as d:
+            logger.critical(d)
+            self._save(d)
+            wandb.save(f'{d}/{self.trial_name}.pt')

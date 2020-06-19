@@ -1,5 +1,5 @@
-mlflow==1.7.2
-ray==0.8.4
+wandb==0.9.1
+ray==0.8.5
 ray[tune]
 namegenerator==1.0.6
 tqdm==4.44.1

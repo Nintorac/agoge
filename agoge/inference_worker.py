@@ -2,10 +2,9 @@ from pathlib import Path
 from contextlib import suppress
 from urllib.request import urlretrieve
 from tqdm import tqdm
-import mlflow
 import torch
 from ray.tune import Trainable
-from agoge import AbstractModel as Model, Tracker, AbstractSolver as Solver, DataHandler
+from agoge import AbstractModel as Model, AbstractSolver as Solver, DataHandler
 from agoge.utils import to_device
 from agoge import DEFAULTS
 from agoge.utils import get_logger, download_blob
