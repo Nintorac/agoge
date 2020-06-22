@@ -41,7 +41,11 @@ class TrainWorker(Trainable):
                  for key, value in self.config.items() if 'param_' in key
         })
 
-        wandb.watch(self.model)
+        try:
+            # hacky workaround to ensure not a jit script model
+            wandb.watch(self.model)
+        except:
+            pass
 
     def setup_components(self, config):
         
@@ -64,7 +68,6 @@ class TrainWorker(Trainable):
 
             loss = self.solver.solve(X)
             wandb.log(loss)
-            break
         
         return loss
 
