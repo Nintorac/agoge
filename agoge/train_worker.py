@@ -1,7 +1,8 @@
-import wandb
-import torch
+from collections import defaultdict
 from tempfile import TemporaryDirectory
 from pathlib import Path
+import wandb
+import torch
 from tqdm import tqdm
 from ray.tune import Trainable
 from agoge import AbstractModel as Model, AbstractSolver as Solver, DataHandler
@@ -18,7 +19,7 @@ class TrainWorker(Trainable):
 
         self.setup_worker(config)
         self.setup_components(config)
-        self.setup_tracking(config)
+        self.setup_tracking(**config)
 
     @property
     def trial_name(self):
@@ -28,17 +29,19 @@ class TrainWorker(Trainable):
 
         self.points_per_epoch = points_per_epoch
 
-    def setup_tracking(self, config):
+    def setup_tracking(self, experiment_name, log_freq=50, **kwargs):
+
+        self.log_freq = log_freq
 
         wandb.init(
-            project=config['experiment_name'],
+            project=experiment_name,
             name=self.trial_name,
             resume=True
             )
         
         wandb.config.update({
             key.replace('param_', ''): value
-                 for key, value in self.config.items() if 'param_' in key
+                 for key, value in kwargs.items() if 'param_' in key
         })
 
         try:
@@ -61,15 +64,45 @@ class TrainWorker(Trainable):
         self.model.eval()
 
     def epoch(self, loader, phase):
+        """
+        loader - pytorch data loader
+        phase - training phase in {train, evaluate}
+        """
         
+        total_loss = defaultdict(int)
+
+        # calculate steps so far
+        steps = len(loader) * self.iteration
+
         for i, X in enumerate(tqdm(loader, disable=bool(DEFAULTS['TQDM_DISABLED']))):
             
+            # pass data through solver
             X = to_device(X, self.model.device)
-
             loss = self.solver.solve(X)
-            wandb.log(loss)
+
+            # accumulate total loss
+            with torch.no_grad():
+                for key, value in loss.items():
+                    total_loss[key] += value
+
+            # log instantaneous loss
+            if not i % self.log_freq:
+                wandb.log({
+                    f'{phase}_step': steps+i,
+                    **{f'{phase}_{key}': value for key, value in loss.items()}
+                })
         
-        return loss
+        # calculate epoch averages
+        epoch_loss = {key: value/len(loader) for key, value in total_loss.items()}
+        
+        # log epoch loss
+        wandb.log({
+            'epoch': self.iteration,
+            **{f'{phase}_epoch_{key}': value for key, value in epoch_loss.items()}
+        })
+
+
+        return epoch_loss
 
 
     def _train(self):
