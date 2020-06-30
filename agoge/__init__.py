@@ -13,3 +13,4 @@ from .model import AbstractModel
 from .solver import AbstractSolver
 from .train_worker import TrainWorker
 from .inference_worker import InferenceWorker
+from .lmdb_helper import LMDBDataset

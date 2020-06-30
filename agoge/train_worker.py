@@ -23,7 +23,9 @@ class TrainWorker(Trainable):
 
     @property
     def trial_name(self):
-        return self._trial_info._trial_name
+        if self._trial_info is not None:
+            return self._trial_info._trial_name
+        return 'test'
 
     def setup_worker(self, points_per_epoch=10, **kwargs):
 

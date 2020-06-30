@@ -10,14 +10,27 @@ TrainTestEvaluate = namedtuple('Loaders', ('train', 'evaluate', 'test'))
 class DataHandler():
 
 
-    def __init__(self, dataset, split_sizes=(0.7, 0.2, 0.1), loader_opts={}, **kwargs):
+    def __init__(self, Dataset, dataset_opts,
+                loader_opts={},
+                split_sizes=(0.7, 0.2, 0.1),  **kwargs):
 
         assert len(split_sizes)==3, 'expects train, evaluate and test split ratio'
+
+        if isinstance(Dataset, str):
+            Dataset = import_module(Dataset)
+
+        dataset = Dataset(**dataset_opts)
 
         subset_size = lambda ratio: int(ratio*len(dataset))
         *dataset_sizes, _ = map(subset_size, split_sizes)
         dataset_sizes = (*dataset_sizes, len(dataset)-sum(dataset_sizes))
         
+        if hasattr(dataset, 'collate_fn'):
+            loader_opts.update({
+                'collate_fn': dataset.collate_fn
+            })
+
+
         ArgLoader = partial(DataLoader, **loader_opts)
 
         self.datasets = TrainTestEvaluate(*random_split(dataset, dataset_sizes))
@@ -25,13 +38,8 @@ class DataHandler():
 
 
     @staticmethod
-    def from_config(Dataset, dataset_opts, **kwargs):
-        if isinstance(Dataset, str):
-            Dataset = import_module(Dataset)
-
-        dataset = Dataset(**dataset_opts)
-
-        return DataHandler(dataset, **kwargs)
+    def from_config(**kwargs):
+        return DataHandler(**kwargs)
 
 if __name__=='__main__':
     from torchvision import datasets, transforms
