@@ -60,10 +60,10 @@ class TrainWorker(Trainable):
         self.model = Model.from_config(**worker_config['model'])
         self.solver = Solver.from_config(model=self.model, **worker_config['solver'])
         self.dataset = DataHandler.from_config(**worker_config['data_handler'])
-        if torch.cuda.is_available():
-            self.model = self.model.cuda()
 
         self.model.eval()
+        if torch.cuda.is_available():
+            self.model = self.model.cuda()
 
     def epoch(self, loader, phase):
         """
@@ -118,7 +118,7 @@ class TrainWorker(Trainable):
         
 
     def _save(self, path):
-
+        self.model.cpu()
         state_dict = {
             'model': self.model.state_dict(),
             'solver': self.solver.state_dict(),
@@ -127,6 +127,9 @@ class TrainWorker(Trainable):
 
         path = Path(path).joinpath(f'{self.trial_name}.pt').as_posix()
         torch.save(state_dict, path)
+
+        if torch.cuda.is_available():
+            self.model = self.model.cuda()
 
         return path
 
