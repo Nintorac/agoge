@@ -16,10 +16,17 @@ class LMDBDataset():
         map_size - max size of database, defaults to 200gb
         """
 
-        db_path = Path(db_path).expanduser().resolve()
-        self.db = lmdb.open(str(db_path), map_size=map_size, writemap=True, map_async=True, readonly=readonly)
+        self.db_path = Path(db_path).expanduser().resolve()
+        self.map_size = map_size
+        self.readonly = readonly
 
-        self.begin = self.db.begin
+    @property
+    def db(self):
+        return lmdb.open(str(self.db_path), map_size=self.map_size, writemap=True, map_async=True, readonly=self.readonly)
+
+    @property
+    def begin(self):
+        return self.db.begin
 
     @staticmethod
     def _pickle_dict(dict):
@@ -54,7 +61,7 @@ class LMDBDataset():
         with self.db.begin() as tx:
             cursor = tx.cursor()
             keys = [i.decode() for i in cursor.iternext(keys=True, values=False)]
-
+        keys.sort()
         return keys
 
     def get(self, key, tx=None):
