@@ -38,7 +38,8 @@ class TrainWorker(Trainable):
         wandb.init(
             project=experiment_name,
             name=self.trial_name,
-            resume=True
+            resume=True,
+            id=self.trial_name
             )
         
         wandb.config.update({
@@ -108,13 +109,16 @@ class TrainWorker(Trainable):
 
 
     def _train(self):
-        
+        if torch.cuda.is_available():
+            self.model = self.model.cuda()
         with self.model.train_model():
             self.epoch(self.dataset.loaders.train, 'train')
         with torch.no_grad():
             loss = self.epoch(self.dataset.loaders.evaluate, 'evaluate')
 
-        return {'loss': loss}
+        self.model = self.model.cpu()
+
+        return loss
         
 
     def _save(self, path):
@@ -141,9 +145,9 @@ class TrainWorker(Trainable):
         self.model.load_state_dict(state_dict['model'])
         self.solver.load_state_dict(state_dict['solver'])
 
-    def _stop(self):
+    # def _stop(self):
 
-        with TemporaryDirectory() as d:
-            logger.critical(d)
-            self._save(d)
-            wandb.save(f'{d}/{self.trial_name}.pt')
+    #     with TemporaryDirectory() as d:
+    #         logger.critical(d)
+    #         self._save(d)
+    #         wandb.save(f'{d}/{self.trial_name}.pt')
