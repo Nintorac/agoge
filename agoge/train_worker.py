@@ -31,7 +31,7 @@ class TrainWorker(Trainable):
 
         self.points_per_epoch = points_per_epoch
 
-    def setup_tracking(self, experiment_name, log_freq=50, **kwargs):
+    def setup_tracking(self, experiment_name, wandb_watch=False, log_freq=50, **kwargs):
 
         self.log_freq = log_freq
 
@@ -46,11 +46,9 @@ class TrainWorker(Trainable):
                  for key, value in kwargs.items() if 'param_' in key
         })
 
-        try:
+        if wandb_watch:
             # hacky workaround to ensure not a jit script model
             wandb.watch(self.model)
-        except:
-            pass
 
     def setup_components(self, config):
         
