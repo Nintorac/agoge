@@ -10,7 +10,7 @@ class LMDBDataset():
     LMDB interface that expects str keys and dict values
     """
 
-    def __init__(self, db_path, map_size=200*1e9, readonly=True):
+    def __init__(self, db_path, map_size=200*1e9, readonly=True, max_dbs=0):
         """
         db_path - path to lmdb folder
         map_size - max size of database, defaults to 200gb
@@ -19,10 +19,17 @@ class LMDBDataset():
         self.db_path = Path(db_path).expanduser().resolve()
         self.map_size = map_size
         self.readonly = readonly
+        self.max_dbs = max_dbs
 
     @property
     def db(self):
-        return lmdb.open(str(self.db_path), map_size=self.map_size, writemap=True, map_async=True, readonly=self.readonly)
+        return lmdb.open(str(self.db_path), 
+                map_size=self.map_size, 
+                writemap=True, 
+                map_async=True, 
+                readonly=self.readonly,
+                max_dbs=self.max_dbs
+            )
 
     @property
     def begin(self):
@@ -42,37 +49,60 @@ class LMDBDataset():
             f.seek(0)
             return torch.load(f)
 
-    def put(self, key, value, tx=None):
+    def put(self, key, value, tx=None, db=None):
+        """
+        Put a new key, value pair in the database using transaction tx and
+        into databae given in db
+
+        key - string
+        value - pickleable dictionary
+        tx - lmdb.Transaction
+        db - string
+        """
         close=False
         if tx is None:
+            env = self.db
+            if db is not None:
+                db = env.open_db(db.encode())
             close = True
-            tx = self.db.begin(write=True)
+            tx = env.begin(write=True, db=db)
 
         tx.put(key.encode('utf-8'), self._pickle_dict(value))
 
         if close:
             tx.commit()
 
-    def keys(self):
+    def keys(self, sort=True, db=None):
         """
         Fetch all the keys in the db
         """
+        env = self.db
+        if db is not None:
+            db = env.open_db(db.encode())
 
-        with self.db.begin() as tx:
+        with env.begin(db=db) as tx:
             cursor = tx.cursor()
             keys = [i.decode() for i in cursor.iternext(keys=True, values=False)]
-        keys.sort()
+        if sort:
+            keys.sort()
         return keys
 
-    def get(self, key, tx=None):
+    def get(self, key, tx=None, db=None):
         """
-        Get the value of a key from the database. 
+        Get the value of a key from the database.
+
+        key - string
+        tx - lmdb.Transaction
+        db - string
         """
         close = False
         if tx is None:
+            env = self.db
+            if db is not None:
+                db = env.open_db(db.encode())
             # open transaction if one doesnt exist
             close = True
-            tx = self.db.begin()        
+            tx = env.begin(db=db)
         
         if isinstance(key, list):
             # get all values as list
@@ -93,6 +123,7 @@ class LMDBDataset():
         
 
         return value
+
 
     def sync(self):
         """
